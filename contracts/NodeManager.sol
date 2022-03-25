@@ -1,7 +1,7 @@
 pragma solidity ^0.8.0;
 // SPDX-License-Identifier: MIT
 
-contract NODERewardManagement {
+contract NodeManager {
     using SafeMath for uint256;
     using IterableMapping for IterableMapping.Map;
 
@@ -231,7 +231,7 @@ contract NODERewardManagement {
     }
 
     function _getRewardAmountOf(address account)
-    external
+    public
     view
     returns (uint256)
     {
@@ -247,25 +247,6 @@ contract NODERewardManagement {
         }
 
         return rewardCount;
-    }
-
-    function _getRewardAmountOf(address account, uint256 _creationTime)
-    external
-    view
-    returns (uint256)
-    {
-        require(isNodeOwner(account), "GET REWARD OF: NO NODE OWNER");
-
-        require(_creationTime > 0, "NODE: CREATIME must be higher than zero");
-        NodeEntity[] storage nodes = _nodesOfUser[account];
-        uint256 numberOfNodes = nodes.length;
-        require(
-            numberOfNodes > 0,
-            "CASHOUT ERROR: You don't have nodes to cash-out"
-        );
-        NodeEntity storage node = _getNodeWithCreatime(nodes, _creationTime);
-        uint256 rewardNode = node.rewardAvailable;
-        return rewardNode;
     }
 
     function _getNodeRewardAmountOf(address account, uint256 creationTime)

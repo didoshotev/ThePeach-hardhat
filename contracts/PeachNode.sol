@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
-import "./NODERewardManagement.sol";
+import "./NodeManager.sol";
 import "./IJoeRouter02.sol";
 import "./IJoeFactory.sol";
 
@@ -12,7 +12,7 @@ contract PEACH is ERC20, Ownable {
     using SafeMath for uint256;
 
     //NODE REWARD MANAGER
-    NODERewardManagement public nodeRewardManager;
+    NodeManager public nodeRewardManager;
 
     IJoeRouter02 public dexRouter;
     address public lpPair;
@@ -112,7 +112,7 @@ contract PEACH is ERC20, Ownable {
 
     //SET NODE MANAGER
     function setNodeManagement(address nodeManagement) external onlyOwner {
-        nodeRewardManager = NODERewardManagement(nodeManagement);
+        nodeRewardManager = NodeManager(nodeManagement);
     }
 
     function updateJoeV2RouterAddress(address newAddress) public onlyOwner {
@@ -306,7 +306,7 @@ contract PEACH is ERC20, Ownable {
             sender != liquidityPool && sender != rewardsPool,
             "CASHOUT: future and rewardsPool cannot cashout rewards"
         );
-        uint256 rewardAmount = getRewardAmountOf(sender);
+        uint256 rewardAmount = nodeRewardManager._getRewardAmountOf(sender);
         require(
             rewardAmount > 0,
             "CASHOUT: You don't have enough reward to cash out"
