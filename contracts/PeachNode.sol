@@ -114,7 +114,8 @@ contract PEACH is ERC20, Ownable {
     function setNodeManagement(address nodeManagement) external onlyOwner {
         nodeRewardManager = NodeManager(nodeManagement);
     }
-
+    
+    //Update Router ADDRESS
     function updateJoeV2RouterAddress(address newAddress) public onlyOwner {
         require(
             newAddress != address(dexRouter),
@@ -152,12 +153,18 @@ contract PEACH is ERC20, Ownable {
 
     function updateRewardsFee(uint256 value) external onlyOwner {
         rewardsFee = value;
-        totalFees = rewardsFee.add(liquidityPoolFee);
+    }
+
+    function updateTreasuryFee(uint256 value) external onlyOwner {
+        treasuryFee = value;
+    }
+
+    function updateMarketingFee(uint256 value) external onlyOwner {
+        marketingFee = value;
     }
 
     function updateLiquidityFee(uint256 value) external onlyOwner {
         liquidityPoolFee = value;
-        totalFees = rewardsFee.add(liquidityPoolFee);
     }
 
     function updateCashoutFee(uint256 value) external onlyOwner {
@@ -341,21 +348,21 @@ contract PEACH is ERC20, Ownable {
     }
 
 
-    // function changeNodePrice(uint256 newNodePrice) public onlyOwner {
-    //     nodeRewardManager._changeNodePrice(newNodePrice);
-    // }
+    function changeNodePrice(uint256 newNodePrice) public onlyOwner {
+        nodeRewardManager._changeNodePrice(newNodePrice);
+    }
 
-    // function getNodePrice() public view returns (uint256) {
-    //     return nodeRewardManager._getNodePrice();
-    // }
+    function getNodePrice() public view returns (uint256) {
+        return nodeRewardManager._getNodePrice();
+    }
 
-    // function changeRewardPerNode(uint256 newPrice) public onlyOwner {
-    //     nodeRewardManager._changeRewardPerNode(newPrice);
-    // }
+    function changeRewardPerNode(uint256 newPrice) public onlyOwner {
+        nodeRewardManager._changeRewardPerNode(newPrice);
+    }
 
-    // function getRewardPerNode() public view returns (uint256) {
-    //     return nodeRewardManager._getRewardPerNode();
-    // }
+    function getRewardPerNode() public view returns (uint256) {
+        return nodeRewardManager._getRewardPerNode();
+    }
 
     //Set Auto Distribution Of Rewards Bool
     function changeAutoDistri(bool newMode) public onlyOwner {
@@ -407,5 +414,6 @@ contract PEACH is ERC20, Ownable {
     {
         return nodeRewardManager._distributeRewards();
     }
+    
     
 }
