@@ -59,7 +59,6 @@ contract NodeManager {
         if (numberOfnodeOwners == 0) {
             return (0, 0, lastIndexProcessed);
         }
-
         uint256 gasUsed = 0;
         uint256 gasLeft = gasleft();
         uint256 newGasLeft;
@@ -101,7 +100,7 @@ contract NodeManager {
         distribution = false;
         return (iterations, claims, lastIndexProcessed);
     }
-
+    //
     function createNode(address account, string memory nodeName) external onlySentry {
         require(isNameAvailable(account, nodeName),"CREATE NODE: Name not available");
         _nodesOfUser[account].push(
