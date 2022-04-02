@@ -47,7 +47,6 @@ contract PeachNode is ERC20, Ownable {
     uint256 private rwSwap;
     bool private swapping = false;
     bool private swapLiquifyEnabled = false;
-    uint256 public swapTokensAmount;
 
     // Track Blacklisted Addresses
     mapping(address => bool) public _isBlacklisted;
@@ -75,22 +74,29 @@ contract PeachNode is ERC20, Ownable {
     );
 
     constructor(
-        uint256 swapAmount,
-        uint256 claimTime,
-        address _dexRouter
+        address _dexRouter,
+        address _liquidityPool,
+        address _rewardsPool,
+        address _treasuryPool,
+        address _marketingPool
     )
         ERC20("PEACH NODE", "PEACH")
     {
         _totalSupply =  2000000;
-        require(claimTime > 0, "CONSTR: claimTime incorrect");
 
-        // require(
-        //     liquidityPool != address(0) && rewardsPool != address(0),
-        //     "FUTUR & REWARD ADDRESS CANNOT BE ZERO"
-        // );
+        //Set Pool Addresses
+        liquidityPool = _liquidityPool;
+        rewardsPool = _rewardsPool;
+        treasuryPool = _treasuryPool;
+        marketingPool = _marketingPool;
 
-        require(swapAmount > 0, "CONSTR: Swap amount incorrect");
-        swapTokensAmount = swapAmount * (10**18);
+        require(
+            liquidityPool != address(0) && 
+            rewardsPool != address(0) && 
+            treasuryPool != address(0) && 
+            marketingPool != address(0),
+            "LIQUIDITY/REWARDS/TREASURY/MARKETING POOL ADDRESS CANNOT BE ZERO"
+        );
 
         //SET ROUTER
         dexRouter = IJoeRouter02(_dexRouter);
@@ -128,11 +134,6 @@ contract PeachNode is ERC20, Ownable {
             dexRouter.WAVAX()
         );
         lpPair = _joeV2Pair;
-    }
-
-    //Update Tokens Swapp
-    function updateSwapTokensAmount(uint256 newVal) external onlyOwner {
-        swapTokensAmount = newVal;
     }
 
     //Update Address Of Liquidity Pool
