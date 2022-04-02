@@ -4,11 +4,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
-import "./NodeManager.sol";
 import "./IJoeRouter02.sol";
 import "./IJoeFactory.sol";
+import "./NodeManager.sol";
 
-contract PEACH is ERC20, Ownable {
+contract PeachNode is ERC20, Ownable {
     using SafeMath for uint256;
 
     //NODE REWARD MANAGER
@@ -79,15 +79,15 @@ contract PEACH is ERC20, Ownable {
         uint256 claimTime,
         address _dexRouter
     )
-        ERC20("PEACH NODES", "PEACH")
+        ERC20("PEACH NODE", "PEACH")
     {
         _totalSupply =  2000000;
         require(claimTime > 0, "CONSTR: claimTime incorrect");
 
-        require(
-            liquidityPool != address(0) && rewardsPool != address(0),
-            "FUTUR & REWARD ADDRESS CANNOT BE ZERO"
-        );
+        // require(
+        //     liquidityPool != address(0) && rewardsPool != address(0),
+        //     "FUTUR & REWARD ADDRESS CANNOT BE ZERO"
+        // );
 
         require(swapAmount > 0, "CONSTR: Swap amount incorrect");
         swapTokensAmount = swapAmount * (10**18);

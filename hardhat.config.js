@@ -13,5 +13,5 @@ require('solidity-coverage');
 });
 
 module.exports = {
-  solidity: ">-0.5.0",
+  solidity: "0.8.7",
 };

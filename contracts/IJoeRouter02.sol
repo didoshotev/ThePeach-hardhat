@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 interface IJoeRouter01 {
     function factory() external pure returns (address);
 
@@ -160,7 +161,7 @@ interface IJoeRouter01 {
 
 // File: contracts/traderjoe/interfaces/IJoeRouter02.sol
 
-pragma solidity >=0.6.2;
+pragma solidity ^0.8.0;
 
 interface IJoeRouter02 is IJoeRouter01 {
     function removeLiquidityAVAXSupportingFeeOnTransferTokens(
