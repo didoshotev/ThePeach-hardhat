@@ -5,16 +5,17 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./IJoeRouter02.sol";
-import "./IJoeFactory.sol";
-import "./NodeManager.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract PeachNode is ERC20, Ownable, ReentrancyGuard {
     using SafeMath for uint256;
 
     uint256 private supply = 2000000;
     uint8 private _decimals = 18;
-    uint256 private _tTotal = supply * (10 ** _decimals);
+    uint256 private _totalSupply = supply * (10 ** _decimals);
+
+    // A number that helps distributing fees to all holders respectively.
+    uint256 private _Total;
     
     address payable public liquidityPool;
     address payable public rewardsPool;
@@ -26,11 +27,17 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
     uint8 public treasuryFee = 30;
     uint8 public teamFee = 4;
 
+    // Keeps track of balances 
+    mapping (address => uint256) private _balances;
+
     // Track Blacklisted Addresses
     mapping(address => bool) public _isBlacklisted;
 
     // Keeps track of which address are excluded from fee.
     mapping (address => bool) private _isExcludedFromFee;
+
+    // ERC20 Token Standard
+    mapping (address => mapping (address => uint256)) private _allowances;
 
     event ExcludeAccountFromFee(address account);
     event IncludeAccountInFee(address account);
@@ -60,6 +67,13 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         ERC20("PEACH NODE", "PEACH")
     {
 
+        _Total =  _totalSupply ;
+
+
+        //Mint
+        _balances[_msgSender()] = _Total;
+
+        // exclude owner and this contract from fees.
         excludeAccountFromFee(msg.sender);
         excludeAccountFromFee(address(this));
 
@@ -76,7 +90,12 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
             teamPool != address(0),
             "LIQUIDITY/REWARDS/TREASURY/MARKETING POOL ADDRESS CANNOT BE ZERO"
         );
+
+        emit Transfer(address(0), _msgSender(), _totalSupply);
     }
+
+    // allow the contract to receive AVAX
+    receive() external payable {}
 
     function updateLiquidityPool(address payable pool) external onlyOwner {
         liquidityPool = pool;
@@ -115,6 +134,11 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         _isBlacklisted[account] = value;
     }
 
+    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
+        _transfer(_msgSender(), recipient, amount);
+        return true;
+    }
+
     function _transfer(address sender, address recipient, uint256 amount) internal override {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
@@ -122,17 +146,46 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         
         ValuesFromAmount memory values = _getValues(amount, _isExcludedFromFee[sender]);
         
+        _transferStandard(sender, recipient, values);
         emit Transfer(sender, recipient, values.tTransferAmount);
         super._transfer(sender, treasuryPool, values.amount - values.tTransferAmount);
         
+    }
 
+    function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
+        _transfer(sender, recipient, amount);
+        require(_allowances[sender][_msgSender()] >= amount, "ERC20: transfer amount exceeds allowance");
+        _approve(sender, _msgSender(), _allowances[sender][_msgSender()] - amount);
+        return true;
+    }
+
+    function _transferStandard(address sender, address recipient, ValuesFromAmount memory values) private {
+        _balances[sender] = _balances[sender] - values.amount;
+        _balances[recipient] = _balances[recipient] + values.tTransferAmount;
+    }
+
+    function allowance(address owner, address spender) public view virtual override returns (uint256) {
+        return _allowances[owner][spender];
+    }
+
+    function approve(address spender, uint256 amount) public virtual override returns (bool) {
+        _approve(_msgSender(), spender, amount);
+        return true;
+    }
+
+    function balanceOf(address account) public view virtual override returns (uint256) {
+        return (_balances[account]);
+    }
+
+    function totalSupply() public view virtual override returns (uint256) {
+        return _totalSupply;
     }
 
     function isExcludedFromFee(address account) external view returns (bool) {
         return _isExcludedFromFee[account];
     }
     
-    function excludeAccountFromFee(address account) internal {
+    function excludeAccountFromFee(address account) public onlyOwner {
         require(!_isExcludedFromFee[account], "Account is already excluded.");
 
         _isExcludedFromFee[account] = true;
@@ -140,7 +193,7 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         emit ExcludeAccountFromFee(account);
     }
 
-    function includeAccountInFee(address account) internal {
+    function includeAccountInFee(address account) public onlyOwner {
         require(_isExcludedFromFee[account], "Account is already included.");
 
         _isExcludedFromFee[account] = false;
