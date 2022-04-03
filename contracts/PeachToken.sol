@@ -11,17 +11,14 @@ import "./NodeManager.sol";
 contract PeachNode is ERC20, Ownable {
     using SafeMath for uint256;
 
+    uint256 private supply = 2000000;
+    uint8 private _decimals = 18;
+    uint256 private _tTotal = supply * (10 ** _decimals);
     //NODE REWARD MANAGER
     NodeManager public nodeRewardManager;
 
     IJoeRouter02 public dexRouter;
     address public lpPair;
-
-    //Initial Supply
-    uint public _totalSupply;
-    uint16 private _decimals = 18;
-
-    uint private totalTokens = _totalSupply * (10 ** _decimals);
 
     // JOE ROUTER
     // TESTNET ROUTER 0x2D99ABD9008Dc933ff5c0CD271B88309593aB921
@@ -30,10 +27,10 @@ contract PeachNode is ERC20, Ownable {
     address private _routerAddress = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
     address public deadWallet = 0x000000000000000000000000000000000000dEaD;
     
-    address public liquidityPool;
-    address public rewardsPool;
-    address public treasuryPool;
-    address public marketingPool;
+    address payable public liquidityPool;
+    address payable public rewardsPool;
+    address payable public treasuryPool; //require contract maybe
+    address payable public marketingPool;
 
     uint256 public liquidityPoolFee;
     uint256 public rewardsFee;
@@ -42,11 +39,6 @@ contract PeachNode is ERC20, Ownable {
 
     uint256 public cashoutFee;
     uint256 public totalFees;
-    
-
-    uint256 private rwSwap;
-    bool private swapping = false;
-    bool private swapLiquifyEnabled = false;
 
     // Track Blacklisted Addresses
     mapping(address => bool) public _isBlacklisted;
@@ -75,14 +67,13 @@ contract PeachNode is ERC20, Ownable {
 
     constructor(
         address _dexRouter,
-        address _liquidityPool,
-        address _rewardsPool,
-        address _treasuryPool,
-        address _marketingPool
+        address payable _liquidityPool,
+        address payable _rewardsPool,
+        address payable _treasuryPool,
+        address payable _marketingPool
     )
         ERC20("PEACH NODE", "PEACH")
     {
-        _totalSupply =  2000000;
 
         //Set Pool Addresses
         liquidityPool = _liquidityPool;
@@ -101,6 +92,10 @@ contract PeachNode is ERC20, Ownable {
         //SET ROUTER
         dexRouter = IJoeRouter02(_dexRouter);
     }
+
+    //ICO Functions
+
+
 
     // Liquidity functions
 
@@ -170,10 +165,6 @@ contract PeachNode is ERC20, Ownable {
 
     function updateCashoutFee(uint256 value) external onlyOwner {
         cashoutFee = value;
-    }
-
-    function updateRwSwapFee(uint256 value) external onlyOwner {
-        rwSwap = value;
     }
 
     function setAutomatedMarketMakerPair(address pair, bool value)
@@ -274,147 +265,134 @@ contract PeachNode is ERC20, Ownable {
     }
 
     // Create Node
-    function createNodeWithTokens(string memory name) public {
-        address sender = _msgSender();
-        uint256 nodePrice = nodeRewardManager.nodePrice();
-        require(
-            bytes(name).length > 3 && bytes(name).length < 32,
-            "NODE CREATION: NAME SIZE INVALID"
-        );
-        require(
-            sender != address(0),
-            "NODE CREATION:  creation from the zero address"
-        );
-        require(!_isBlacklisted[sender], "NODE CREATION: Blacklisted address");
-        require(
-            sender != liquidityPool && sender != rewardsPool,
-            "NODE CREATION: liquidityPool and rewardsPool cannot create node"
-        );
-        require(
-            balanceOf(sender) >= nodeRewardManager._getNodePrice(),
-            "NODE CREATION: Balance too low for creation."
-        );
+    // function createNodeWithTokens(string memory name) public {
+    //     address sender = _msgSender();
+    //     uint256 nodePrice = nodeRewardManager.nodePrice();
+    //     require(
+    //         bytes(name).length > 3 && bytes(name).length < 32,
+    //         "NODE CREATION: NAME SIZE INVALID"
+    //     );
+    //     require(
+    //         sender != address(0),
+    //         "NODE CREATION:  creation from the zero address"
+    //     );
+    //     require(!_isBlacklisted[sender], "NODE CREATION: Blacklisted address");
+    //     require(
+    //         sender != liquidityPool && sender != rewardsPool,
+    //         "NODE CREATION: liquidityPool and rewardsPool cannot create node"
+    //     );
+    //     require(
+    //         balanceOf(sender) >= nodeRewardManager._getNodePrice(),
+    //         "NODE CREATION: Balance too low for creation."
+    //     );
 
-        super._transfer(sender, address(this), nodePrice);
-        nodeRewardManager.createNode(sender, name);
-    }
+    //     super._transfer(sender, address(this), nodePrice);
+    //     nodeRewardManager.createNode(sender, name);
+    // }
 
     // Claim Rewards
-    function claimRewards() public {
-        address sender = _msgSender();
-        require(
-            sender != address(0),
-            "CASHOUT: zero address cannot cash out rewards"
-        );
-        require(
-            !_isBlacklisted[sender],
-            "CASHOUT: Blacklisted address cannot cash out rewards"
-        );
-        require(
-            sender != liquidityPool && sender != rewardsPool,
-            "CASHOUT: future and rewardsPool cannot cashout rewards"
-        );
-        uint256 rewardAmount = nodeRewardManager._getRewardAmountOf(sender);
-        require(
-            rewardAmount > 0,
-            "CASHOUT: You don't have enough reward to cash out"
-        );
-        if (swapLiquifyEnabled) {
-            uint256 feeAmount;
-            if (cashoutFee > 0) {
-                feeAmount = rewardAmount.mul(cashoutFee).div(100);
-                swapAndSendToFee(liquidityPool, feeAmount);
-            }
-            rewardAmount -= feeAmount;
-        }
-        super._transfer(rewardsPool, sender, rewardAmount);
-        nodeRewardManager._cashoutAllNodesReward(sender);
-    }
-
-    //Change Liquidity Swap Amount
-    function changeSwapLiquify(bool newVal) public onlyOwner {
-        swapLiquifyEnabled = newVal;
-    }
+    // function claimRewards() public {
+    //     address sender = _msgSender();
+    //     require(
+    //         sender != address(0),
+    //         "CASHOUT: zero address cannot cash out rewards"
+    //     );
+    //     require(
+    //         !_isBlacklisted[sender],
+    //         "CASHOUT: Blacklisted address cannot cash out rewards"
+    //     );
+    //     require(
+    //         sender != liquidityPool && sender != rewardsPool,
+    //         "CASHOUT: future and rewardsPool cannot cashout rewards"
+    //     );
+    //     uint256 rewardAmount = nodeRewardManager._getRewardAmountOf(sender);
+    //     require(
+    //         rewardAmount > 0,
+    //         "CASHOUT: You don't have enough reward to cash out"
+    //     );
+    //     super._transfer(rewardsPool, sender, rewardAmount);
+    //     nodeRewardManager._cashoutAllNodesReward(sender);
+    // }
 
     //View Number Of Nodes For Address
-    function getNodeNumberOf(address account) public view returns (uint256) {
-        return nodeRewardManager._getNodeNumberOf(account);
-    }
+    // function getNodeNumberOf(address account) public view returns (uint256) {
+    //     return nodeRewardManager._getNodeNumberOf(account);
+    // }
 
     //View Total Reward Amount
-    function getRewardAmount() public view returns (uint256) {
-        require(msg.sender != address(0), "SENDER CAN'T BE ZERO");
-        require(nodeRewardManager._isNodeOwner(msg.sender), "NO NODE OWNER");
-        return nodeRewardManager._getRewardAmountOf(msg.sender);
-    }
+    // function getRewardAmount() public view returns (uint256) {
+    //     require(msg.sender != address(0), "SENDER CAN'T BE ZERO");
+    //     require(nodeRewardManager._isNodeOwner(msg.sender), "NO NODE OWNER");
+    //     return nodeRewardManager._getRewardAmountOf(msg.sender);
+    // }
 
 
-    function changeNodePrice(uint256 newNodePrice) public onlyOwner {
-        nodeRewardManager._changeNodePrice(newNodePrice);
-    }
+    // function changeNodePrice(uint256 newNodePrice) public onlyOwner {
+    //     nodeRewardManager._changeNodePrice(newNodePrice);
+    // }
 
-    function getNodePrice() public view returns (uint256) {
-        return nodeRewardManager._getNodePrice();
-    }
+    // function getNodePrice() public view returns (uint256) {
+    //     return nodeRewardManager._getNodePrice();
+    // }
 
-    function changeRewardPerNode(uint256 newPrice) public onlyOwner {
-        nodeRewardManager._changeRewardPerNode(newPrice);
-    }
+    // function changeRewardPerNode(uint256 newPrice) public onlyOwner {
+    //     nodeRewardManager._changeRewardPerNode(newPrice);
+    // }
 
-    function getRewardPerNode() public view returns (uint256) {
-        return nodeRewardManager._getRewardPerNode();
-    }
+    // function getRewardPerNode() public view returns (uint256) {
+    //     return nodeRewardManager._getRewardPerNode();
+    // }
 
     //Set Auto Distribution Of Rewards Bool
-    function changeAutoDistri(bool newMode) public onlyOwner {
-        nodeRewardManager._changeAutoDistri(newMode);
-    }
+    // function changeAutoDistri(bool newMode) public onlyOwner {
+    //     nodeRewardManager._changeAutoDistri(newMode);
+    // }
 
-    //Change Gas For Rewards Distribution
-    function changeGasDistri(uint256 newGasDistri) public onlyOwner {
-        nodeRewardManager._changeGasDistri(newGasDistri);
-    }
+    // //Change Gas For Rewards Distribution
+    // function changeGasDistri(uint256 newGasDistri) public onlyOwner {
+    //     nodeRewardManager._changeGasDistri(newGasDistri);
+    // }
 
     //View Node Names
-    function getNodesNames() public view returns (string memory) {
-        require(_msgSender() != address(0), "SENDER CAN'T BE ZERO");
-        require(nodeRewardManager._isNodeOwner(_msgSender()), "NO NODE OWNER");
-        return nodeRewardManager._getNodesNames(_msgSender());
-    }
+    // function getNodesNames() public view returns (string memory) {
+    //     require(_msgSender() != address(0), "SENDER CAN'T BE ZERO");
+    //     require(nodeRewardManager._isNodeOwner(_msgSender()), "NO NODE OWNER");
+    //     return nodeRewardManager._getNodesNames(_msgSender());
+    // }
 
-    //View Time Since First Node Created
-    function getNodesCreatime() public view returns (string memory) {
-        require(_msgSender() != address(0), "SENDER CAN'T BE ZERO");
-        require(nodeRewardManager._isNodeOwner(_msgSender()), "NO NODE OWNER");
-        return nodeRewardManager._getNodesCreationTime(_msgSender());
-    }
+    // //View Time Since First Node Created
+    // function getNodesCreatime() public view returns (string memory) {
+    //     require(_msgSender() != address(0), "SENDER CAN'T BE ZERO");
+    //     require(nodeRewardManager._isNodeOwner(_msgSender()), "NO NODE OWNER");
+    //     return nodeRewardManager._getNodesCreationTime(_msgSender());
+    // }
 
-    //View Rewards Available
-    function getNodesRewards() public view returns (string memory) {
-        require(_msgSender() != address(0), "SENDER CAN'T BE ZERO");
-        require(nodeRewardManager._isNodeOwner(_msgSender()), "NO NODE OWNER");
-        return nodeRewardManager._getNodesRewardAvailable(_msgSender());
-    }
+    // //View Rewards Available
+    // function getNodesRewards() public view returns (string memory) {
+    //     require(_msgSender() != address(0), "SENDER CAN'T BE ZERO");
+    //     require(nodeRewardManager._isNodeOwner(_msgSender()), "NO NODE OWNER");
+    //     return nodeRewardManager._getNodesRewardAvailable(_msgSender());
+    // }
 
-    //View Time Since Last Claim
-    function getNodesLastClaims() public view returns (string memory) {
-        require(_msgSender() != address(0), "SENDER CAN'T BE ZERO");
-        require(nodeRewardManager._isNodeOwner(_msgSender()), "NO NODE OWNER");
-        return nodeRewardManager._getNodesLastClaimTime(_msgSender());
-    }
+    // //View Time Since Last Claim
+    // function getNodesLastClaims() public view returns (string memory) {
+    //     require(_msgSender() != address(0), "SENDER CAN'T BE ZERO");
+    //     require(nodeRewardManager._isNodeOwner(_msgSender()), "NO NODE OWNER");
+    //     return nodeRewardManager._getNodesLastClaimTime(_msgSender());
+    // }
 
-    //Distribute Rewards To Node Owners
-    function distributeRewards()
-        public
-        onlyOwner
-        returns (
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        return nodeRewardManager._distributeRewards();
-    }
+    // //Distribute Rewards To Node Owners
+    // function distributeRewards()
+    //     public
+    //     onlyOwner
+    //     returns (
+    //         uint256,
+    //         uint256,
+    //         uint256
+    //     )
+    // {
+    //     return nodeRewardManager._distributeRewards();
+    // }
     
     
 }
