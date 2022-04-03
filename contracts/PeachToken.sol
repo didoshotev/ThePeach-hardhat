@@ -21,10 +21,10 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
     address payable public treasuryPool; 
     address payable public teamPool;
 
-    uint8 public liquidityPoolFee = 1;
-    uint8 public rewardsFee = 3;
-    uint8 public treasuryFee = 4;
-    uint8 public teamFee = 2;
+    uint8 public liquidityPoolFee = 4;
+    uint8 public rewardsFee = 12;
+    uint8 public treasuryFee = 30;
+    uint8 public teamFee = 4;
 
     // Track Blacklisted Addresses
     mapping(address => bool) public _isBlacklisted;
