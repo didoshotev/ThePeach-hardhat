@@ -17,10 +17,10 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
     // A number that helps distributing fees to all holders respectively.
     uint256 private _Total;
     
-    address payable public liquidityPool;
-    address payable public rewardsPool;
-    address payable public treasuryPool; 
-    address payable public teamPool;
+    address payable private liquidityPool;
+    address payable private rewardsPool;
+    address payable private treasuryPool; 
+    address payable private teamPool;
 
     uint8 public liquidityPoolFee = 4;
     uint8 public rewardsFee = 12;
@@ -36,8 +36,8 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
     // Keeps track of which address are excluded from fee.
     mapping (address => bool) private _isExcludedFromFee;
 
-    // ERC20 Token Standard
-    mapping (address => mapping (address => uint256)) private _allowances;
+    // // ERC20 Token Standard
+    // mapping (address => mapping (address => uint256)) private _allowances;
 
     event ExcludeAccountFromFee(address account);
     event IncludeAccountInFee(address account);
@@ -92,6 +92,7 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         );
 
         emit Transfer(address(0), _msgSender(), _totalSupply);
+        emit OwnershipTransferred(address(0), _msgSender());
     }
 
     // allow the contract to receive AVAX
@@ -134,7 +135,7 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         _isBlacklisted[account] = value;
     }
 
-    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
+    function transfer(address recipient, uint256 amount) public override returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
@@ -144,18 +145,29 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         require(recipient != address(0), "ERC20: transfer to the zero address");
         require(!_isBlacklisted[sender] && !_isBlacklisted[recipient],"Blacklisted address");
         
+        bool takeFee = true;
         ValuesFromAmount memory values = _getValues(amount, _isExcludedFromFee[sender]);
         
-        _transferStandard(sender, recipient, values);
-        emit Transfer(sender, recipient, values.tTransferAmount);
-        super._transfer(sender, treasuryPool, values.amount - values.tTransferAmount);
+        if(_isExcludedFromFee[sender] || _isExcludedFromFee[recipient]){
+            takeFee = false;
+        }
+
+        uint256 amountReceived = amount;
+
+        if (takeFee) {
+            amountReceived=values.tTransferAmount;
+            _balances[treasuryPool]+=values.amount-values.tTransferAmount;
+        }
+
+        _balances[sender]-=amountReceived;
+        _balances[recipient]+=amountReceived;
         
-    }
+        emit Transfer(sender, recipient, amountReceived);
+    }   
+
 
     function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
         _transfer(sender, recipient, amount);
-        require(_allowances[sender][_msgSender()] >= amount, "ERC20: transfer amount exceeds allowance");
-        _approve(sender, _msgSender(), _allowances[sender][_msgSender()] - amount);
         return true;
     }
 
@@ -164,8 +176,20 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         _balances[recipient] = _balances[recipient] + values.tTransferAmount;
     }
 
-    function allowance(address owner, address spender) public view virtual override returns (uint256) {
-        return _allowances[owner][spender];
+    function _transferToExcluded(address sender, address recipient, ValuesFromAmount memory values) private {
+        _balances[sender] = _balances[sender] - values.amount;
+        _balances[recipient] = _balances[recipient] + values.tTransferAmount;
+    }
+
+    function _transferFromExcluded(address sender, address recipient, ValuesFromAmount memory values) private {
+
+        _balances[sender] = _balances[sender] - values.amount;
+        _balances[recipient] = _balances[recipient] + values.tTransferAmount;
+    }
+
+    function _transferBothExcluded(address sender, address recipient, ValuesFromAmount memory values) private {
+        _balances[sender] = _balances[sender] - values.amount;
+        _balances[recipient] = _balances[recipient] + values.tTransferAmount;
     }
 
     function approve(address spender, uint256 amount) public virtual override returns (bool) {
