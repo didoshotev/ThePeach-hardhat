@@ -14,6 +14,9 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
     uint8 private _decimals = 18;
     uint256 private _totalSupply = supply * (10 ** _decimals);
 
+    uint256 private lock = 100000;
+    uint256 private lockedSupply = lock * (10 ** _decimals);
+
     // A number that helps distributing fees to all holders respectively.
     uint256 private _Total;
     
@@ -51,7 +54,7 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         uint256 tRewardsFee;
         // Amount tokens charged to add to treasury.
         uint256 tTreasuryFee;
-        //Amount tokens charged to add to marketing.
+        //Amount tokens charged to add to team.
         uint256 tTeamFee;
         // Amount tokens after fees.
         uint256 tTransferAmount;
@@ -62,7 +65,7 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         address payable _liquidityPool,
         address payable _rewardsPool,
         address payable _treasuryPool,
-        address payable _marketingPool
+        address payable _teamPool
     )
         ERC20("PEACH NODE", "PEACH")
     {
@@ -76,19 +79,23 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         // exclude owner and this contract from fees.
         excludeAccountFromFee(msg.sender);
         excludeAccountFromFee(address(this));
+        excludeAccountFromFee(teamPool);
+        // excludeAccountFromFee(rewardsPool);
+        // excludeAccountFromFee(liquidityPool);
+        // excludeAccountFromFee(treasuryPool);
 
         //Set Pool Addresses
         liquidityPool = _liquidityPool;
         rewardsPool = _rewardsPool;
         treasuryPool = _treasuryPool;
-        teamPool = _marketingPool;
+        teamPool = _teamPool;
 
         require(
             liquidityPool != address(0) && 
             rewardsPool != address(0) && 
             treasuryPool != address(0) && 
             teamPool != address(0),
-            "LIQUIDITY/REWARDS/TREASURY/MARKETING POOL ADDRESS CANNOT BE ZERO"
+            "LIQUIDITY/REWARDS/TREASURY/team POOL ADDRESS CANNOT BE ZERO"
         );
 
         emit Transfer(address(0), _msgSender(), _totalSupply);
@@ -108,7 +115,7 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
     function updateTreasuryPool(address payable pool) external onlyOwner {
         treasuryPool = pool;
     }
-    function updateMarketingPool(address payable pool) external onlyOwner {
+    function updateteamPool(address payable pool) external onlyOwner {
         teamPool = pool;
     }
 
@@ -120,7 +127,7 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         treasuryFee = value;
     }
 
-    function updateMarketingFee(uint8 value) external onlyOwner {
+    function updateteamFee(uint8 value) external onlyOwner {
         teamFee = value;
     }
 
@@ -159,7 +166,7 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
             _balances[treasuryPool]+=values.tTreasuryFee;
             _balances[rewardsPool]+=values.tRewardsFee;
             _balances[teamPool]+=values.tTeamFee;
-            _balances[liquidityPool]+=values.tLiquidityFee;
+             _balances[liquidityPool]+=values.tLiquidityFee;
         }
 
         _balances[sender]-=amount;
@@ -168,6 +175,18 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         emit Transfer(sender, recipient, amountReceived);
     }   
 
+    //Set Team Pool and Allocate Funds
+    function lockInTeamWallet(address payable recipient) public onlyOwner {
+        require(recipient != address(0), "ERC20: transfer to the zero address");
+        teamPool = recipient;
+        _balances[msg.sender]-=lockedSupply;
+        _balances[teamPool]+=lockedSupply;
+    
+    }
+
+    function updateTeamPoolAlloc(uint256 val) public onlyOwner {
+        lock = val;
+    }
 
     function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
         _transfer(sender, recipient, amount);
@@ -247,7 +266,12 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
             values.tTeamFee = _calculateTax(values.amount, teamFee, 0);
 
             // amount after fee
-            values.tTransferAmount = values.amount - values.tRewardsFee - values.tLiquidityFee - values.tTreasuryFee - values.tTeamFee;
+            values.tTransferAmount = 
+            values.amount - 
+            values.tRewardsFee - 
+            values.tLiquidityFee - 
+            values.tTreasuryFee - 
+            values.tTeamFee;
         }
     }
 

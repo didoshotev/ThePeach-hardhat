@@ -1,5 +1,7 @@
 const { expect, assert } = require("chai");
 const { ethers } = require("hardhat");
+const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
+const { ZERO_ADDRESS, MAX_UINT256 } = constants;
 
 let Token;
 let Peach;
@@ -7,6 +9,7 @@ let owner;
 let addr1;
 let addr2;
 let addrs;
+
 
 beforeEach(async function () {
     Token = await ethers.getContractFactory("PeachNode");
@@ -123,5 +126,24 @@ describe("Transactions", function () {
         );
         expect(addr2Balance).to.equal(50);
       });
+
+      it("Team Wallet Tokens Should Be Allocated", async function (){
+        let  supply = 2000000;
+        let  _decimals = 18;
+        let  _totalSupply = supply * (10 ** _decimals);
+        let lock = 100000;
+        let lockedSupply = lock * (10 ** _decimals);
+        // Get Balance Of Owner
+        const ownerBalance = await Peach.balanceOf(
+            owner.address
+        );
+        assert.equal(ownerBalance,_totalSupply, 'Tokens Minted To Owner')
+
+        await Peach.lockInTeamWallet(addr1.address);
+        
+        const addr1Balance = await Peach.balanceOf(addr1.address);
+        
+        assert.equal(addr1Balance,lockedSupply, 'Team Wallet Tokens Sent')
+      })
       
 });
