@@ -156,10 +156,13 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
 
         if (takeFee) {
             amountReceived=values.tTransferAmount;
-            _balances[treasuryPool]+=values.amount-values.tTransferAmount;
+            _balances[treasuryPool]+=values.tTreasuryFee;
+            _balances[rewardsPool]+=values.tRewardsFee;
+            _balances[teamPool]+=values.tTeamFee;
+            _balances[liquidityPool]+=values.tLiquidityFee;
         }
 
-        _balances[sender]-=amountReceived;
+        _balances[sender]-=amount;
         _balances[recipient]+=amountReceived;
         
         emit Transfer(sender, recipient, amountReceived);
