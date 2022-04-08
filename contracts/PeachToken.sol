@@ -7,8 +7,10 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract PeachNode is ERC20, Ownable, ReentrancyGuard {
+contract PeachToken is ERC20, Ownable, ReentrancyGuard {
     using SafeMath for uint256;
+
+    mapping(address => uint256) private _balances;
 
     uint256 private supply = 2000000;
     uint8 private _decimals = 18;
@@ -16,10 +18,8 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
 
     uint256 private lock = 100000;
     uint256 private lockedSupply = lock * (10 ** _decimals);
-
-    // A number that helps distributing fees to all holders respectively.
-    uint256 private _Total;
     
+    //DEAD - 0x000000000000000000000000000000000000dEaD
     address payable private liquidityPool;
     address payable private rewardsPool;
     address payable private treasuryPool; 
@@ -30,17 +30,11 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
     uint8 public treasuryFee = 30;
     uint8 public teamFee = 4;
 
-    // Keeps track of balances 
-    mapping (address => uint256) private _balances;
-
     // Track Blacklisted Addresses
     mapping(address => bool) public _isBlacklisted;
 
     // Keeps track of which address are excluded from fee.
-    mapping (address => bool) private _isExcludedFromFee;
-
-    // // ERC20 Token Standard
-    // mapping (address => mapping (address => uint256)) private _allowances;
+    mapping (address => bool) private _isExcludedFromFee; 
 
     event ExcludeAccountFromFee(address account);
     event IncludeAccountInFee(address account);
@@ -70,20 +64,6 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
         ERC20("PEACH NODE", "PEACH")
     {
 
-        _Total =  _totalSupply ;
-
-
-        //Mint
-        _balances[_msgSender()] = _Total;
-
-        // exclude owner and this contract from fees.
-        excludeAccountFromFee(msg.sender);
-        excludeAccountFromFee(address(this));
-        excludeAccountFromFee(teamPool);
-        // excludeAccountFromFee(rewardsPool);
-        // excludeAccountFromFee(liquidityPool);
-        // excludeAccountFromFee(treasuryPool);
-
         //Set Pool Addresses
         liquidityPool = _liquidityPool;
         rewardsPool = _rewardsPool;
@@ -95,14 +75,28 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
             rewardsPool != address(0) && 
             treasuryPool != address(0) && 
             teamPool != address(0),
-            "LIQUIDITY/REWARDS/TREASURY/team POOL ADDRESS CANNOT BE ZERO"
+            "LIQUIDITY/REWARDS/TREASURY/TEAM POOL ADDRESS CANNOT BE ZERO"
         );
+        
+        //Mint
+        _balances[_msgSender()] = _totalSupply;
+
+        // exclude owner and this contract from fees.
+        excludeAccountFromFee(msg.sender);
+        excludeAccountFromFee(address(this));
+        excludeAccountFromFee(teamPool);
+        // excludeAccountFromFee(rewardsPool);
+        // excludeAccountFromFee(liquidityPool);
+        // excludeAccountFromFee(treasuryPool);
+
+        
 
         emit Transfer(address(0), _msgSender(), _totalSupply);
         emit OwnershipTransferred(address(0), _msgSender());
     }
 
     // allow the contract to receive AVAX
+    //test on testnet
     receive() external payable {}
 
     function updateLiquidityPool(address payable pool) external onlyOwner {
@@ -166,12 +160,12 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
             _balances[treasuryPool]+=values.tTreasuryFee;
             _balances[rewardsPool]+=values.tRewardsFee;
             _balances[teamPool]+=values.tTeamFee;
-             _balances[liquidityPool]+=values.tLiquidityFee;
+            _balances[liquidityPool]+=values.tLiquidityFee;
         }
 
         _balances[sender]-=amount;
         _balances[recipient]+=amountReceived;
-        
+        //transfer to wallet
         emit Transfer(sender, recipient, amountReceived);
     }   
 
@@ -212,11 +206,6 @@ contract PeachNode is ERC20, Ownable, ReentrancyGuard {
     function _transferBothExcluded(address sender, address recipient, ValuesFromAmount memory values) private {
         _balances[sender] = _balances[sender] - values.amount;
         _balances[recipient] = _balances[recipient] + values.tTransferAmount;
-    }
-
-    function approve(address spender, uint256 amount) public virtual override returns (bool) {
-        _approve(_msgSender(), spender, amount);
-        return true;
     }
 
     function balanceOf(address account) public view virtual override returns (uint256) {

@@ -1,6 +1,5 @@
 const { expect, assert } = require("chai");
 const { ethers } = require("hardhat");
-const { ZERO_ADDRESS, MAX_UINT256 } = constants;
 
 let Token;
 let Peach;
@@ -9,9 +8,10 @@ let addr1;
 let addr2;
 let addrs;
 
+//More Negative Tests
 
 beforeEach(async function () {
-    Token = await ethers.getContractFactory("PeachNode");
+    Token = await ethers.getContractFactory("PeachToken");
     [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
     Peach = await Token.deploy(
         "0x000000000000000000000000000000000000dEaD",
@@ -82,6 +82,8 @@ describe("Transactions", function () {
         const addr2Balance = await Peach.balanceOf(
             addr2.address
         );
+
+        //25 as 50% Tax
         expect(addr2Balance).to.equal(25);
     });
 
