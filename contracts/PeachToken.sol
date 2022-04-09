@@ -30,6 +30,8 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
     uint8 public treasuryFee = 30;
     uint8 public teamFee = 4;
 
+    uint public minTransfer = 50;
+
     // Track Blacklisted Addresses
     mapping(address => bool) public _isBlacklisted;
 
@@ -79,7 +81,7 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
         );
         
         //Mint
-        _balances[_msgSender()] = _totalSupply;
+        _mint(_msgSender(), _totalSupply);
 
         // exclude owner and this contract from fees.
         excludeAccountFromFee(msg.sender);
@@ -146,6 +148,10 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
         require(recipient != address(0), "ERC20: transfer to the zero address");
         require(!_isBlacklisted[sender] && !_isBlacklisted[recipient],"Blacklisted address");
         
+        if (!_isExcludedFromFee[sender]){
+            require(amount >= minTransfer);
+        }
+
         bool takeFee = true;
         ValuesFromAmount memory values = _getValues(amount, _isExcludedFromFee[sender]);
         
@@ -157,59 +163,33 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
 
         if (takeFee) {
             amountReceived=values.tTransferAmount;
-            _balances[treasuryPool]+=values.tTreasuryFee;
-            _balances[rewardsPool]+=values.tRewardsFee;
-            _balances[teamPool]+=values.tTeamFee;
-            _balances[liquidityPool]+=values.tLiquidityFee;
+
+            super._transfer(sender, treasuryPool, values.tTreasuryFee);
+            super._transfer(sender, rewardsPool, values.tRewardsFee);
+            super._transfer(sender, teamPool, values.tTeamFee);
+            super._transfer(sender, liquidityPool, values.tLiquidityFee);
         }
 
-        _balances[sender]-=amount;
-        _balances[recipient]+=amountReceived;
-        //transfer to wallet
+        super._transfer(sender, recipient, amountReceived);
         emit Transfer(sender, recipient, amountReceived);
-    }   
+    }
+
+    function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
+        require(sender == _msgSender());
+        _transfer(sender, recipient, amount);
+        return true;
+    }
 
     //Set Team Pool and Allocate Funds
     function lockInTeamWallet(address payable recipient) public onlyOwner {
         require(recipient != address(0), "ERC20: transfer to the zero address");
         teamPool = recipient;
-        _balances[msg.sender]-=lockedSupply;
-        _balances[teamPool]+=lockedSupply;
+        transfer(teamPool, lockedSupply);
     
     }
 
     function updateTeamPoolAlloc(uint256 val) public onlyOwner {
         lock = val;
-    }
-
-    function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
-        _transfer(sender, recipient, amount);
-        return true;
-    }
-
-    function _transferStandard(address sender, address recipient, ValuesFromAmount memory values) private {
-        _balances[sender] = _balances[sender] - values.amount;
-        _balances[recipient] = _balances[recipient] + values.tTransferAmount;
-    }
-
-    function _transferToExcluded(address sender, address recipient, ValuesFromAmount memory values) private {
-        _balances[sender] = _balances[sender] - values.amount;
-        _balances[recipient] = _balances[recipient] + values.tTransferAmount;
-    }
-
-    function _transferFromExcluded(address sender, address recipient, ValuesFromAmount memory values) private {
-
-        _balances[sender] = _balances[sender] - values.amount;
-        _balances[recipient] = _balances[recipient] + values.tTransferAmount;
-    }
-
-    function _transferBothExcluded(address sender, address recipient, ValuesFromAmount memory values) private {
-        _balances[sender] = _balances[sender] - values.amount;
-        _balances[recipient] = _balances[recipient] + values.tTransferAmount;
-    }
-
-    function balanceOf(address account) public view virtual override returns (uint256) {
-        return (_balances[account]);
     }
 
     function totalSupply() public view virtual override returns (uint256) {
