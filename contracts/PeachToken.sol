@@ -18,6 +18,7 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
 
     uint256 private lock = 100000;
     uint256 private lockedSupply = lock * (10 ** _decimals);
+    bool private isLocked = false;
     
     //DEAD - 0x000000000000000000000000000000000000dEaD
     address payable private liquidityPool;
@@ -143,6 +144,7 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
         return true;
     }
 
+    //TEST TRANSFER FUNCTION
     function _transfer(address sender, address recipient, uint256 amount) internal override {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
@@ -174,22 +176,23 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
         emit Transfer(sender, recipient, amountReceived);
     }
 
-    function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
-        require(sender == _msgSender());
-        _transfer(sender, recipient, amount);
-        return true;
-    }
-
     //Set Team Pool and Allocate Funds
     function lockInTeamWallet(address payable recipient) public onlyOwner {
         require(recipient != address(0), "ERC20: transfer to the zero address");
+        require(isLocked == false);
         teamPool = recipient;
         transfer(teamPool, lockedSupply);
-    
+        isLocked=true;
     }
 
     function updateTeamPoolAlloc(uint256 val) public onlyOwner {
         lock = val;
+    }
+
+    function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
+        require(sender == _msgSender());
+        _transfer(sender, recipient, amount);
+        return true;
     }
 
     function totalSupply() public view virtual override returns (uint256) {

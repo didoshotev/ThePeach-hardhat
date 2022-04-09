@@ -370,8 +370,8 @@
       ]
     },
     "C:\\Users\\nogazi\\PeachNode\\contracts\\PeachToken.sol": {
-      "lastModificationDate": 1649531976531,
-      "contentHash": "dc619f3cc7d13d6dddad47e8c1499379",
+      "lastModificationDate": 1649532352042,
+      "contentHash": "10bed7c579bc81b9c3f2851254564e6d",
       "sourceName": "contracts/PeachToken.sol",
       "solcConfig": {
         "version": "0.8.0",
