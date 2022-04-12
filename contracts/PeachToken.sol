@@ -94,7 +94,7 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
         excludeAccountFromFee(treasuryPool);
         // excludeAccountFromFee(rewardsPool);
         // excludeAccountFromFee(liquidityPool);
-        // excludeAccountFromFee(treasuryPool);
+        excludeAccountFromFee(teamPool);
 
         emit Transfer(address(0), _msgSender(), _totalSupply);
         emit OwnershipTransferred(address(0), _msgSender());
