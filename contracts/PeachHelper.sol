@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IJoeRouter02.sol";
 import "./IJoeFactory.sol";
-import "./Pool.sol";
 
 //REMOVE IMPORT WHEN NODEMANAGER.SOL IS FINISHED!
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -21,8 +20,6 @@ contract PeachHelper is Ownable {
     IJoeRouter02 public dexRouter;
     address public lpPair;
 
-    Pool public pool;
-
     mapping (address => bool) lpPairs;
     uint256 private timeSinceLastPair = 0;
 
@@ -34,7 +31,6 @@ contract PeachHelper is Ownable {
     constructor(address _manager, address _PeachToken){
         // manager = NodeManager(_manager);
         PeachToken = IERC20(_PeachToken);
-        pool = new Pool(_PeachToken);
         Peach = _PeachToken;
 
         //Testnet Router 

@@ -74,7 +74,7 @@
       ]
     },
     "C:\\Users\\nogazi\\PeachNode\\contracts\\NodeManager.sol": {
-      "lastModificationDate": 1648809278810,
+      "lastModificationDate": 1649783664648,
       "contentHash": "4773198746477d83e392e9dc56b949d3",
       "sourceName": "contracts/NodeManager.sol",
       "solcConfig": {
@@ -370,8 +370,8 @@
       ]
     },
     "C:\\Users\\nogazi\\PeachNode\\contracts\\PeachToken.sol": {
-      "lastModificationDate": 1649532352042,
-      "contentHash": "10bed7c579bc81b9c3f2851254564e6d",
+      "lastModificationDate": 1649784799303,
+      "contentHash": "e3733be1ce34e81ee71fd2be4e9765ef",
       "sourceName": "contracts/PeachToken.sol",
       "solcConfig": {
         "version": "0.8.0",
