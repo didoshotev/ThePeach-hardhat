@@ -177,7 +177,7 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
         emit Transfer(sender, recipient, amountReceived);
     }
 
-    //Set Team Pool and Allocate Funds
+    // Allocate Team Wallet Tokens
     function lockInTeamWallet() public onlyOwner {
         require(isTeamLocked == false);
         isTeamLocked=true;
