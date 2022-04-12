@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "build": "waffle",
-    "test": "export NODE_ENV=test && mocha"
+    "test": "npx hardhat test"
   },
   "author": "",
   "license": "ISC",
