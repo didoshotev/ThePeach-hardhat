@@ -24,12 +24,7 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
     address payable public teamPool; 
     address payable public vault; 
     
-
-    //ARRAY THESE VALUES
-    // uint8 public liquidityPoolFee = 4;
-    // uint8 public rewardsFee = 12;
     uint8 public treasuryFee = 50;
-    // uint8 public teamFee = 4;
 
     // Track Blacklisted Addresses
     mapping(address => bool) public _isBlacklisted;
@@ -43,14 +38,8 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
     struct ValuesFromAmount {
         // Amount of tokens for to transfer.
         uint256 amount;
-        // Amount tokens charged to add to liquidity.
-        // uint256 tLiquidityFee;
-        //Amount tokens charged to add to rewards.
-        // uint256 tRewardsFee;
         // Amount tokens charged to add to treasury.
         uint256 tTreasuryFee;
-        //Amount tokens charged to add to team.
-        // uint256 tTeamFee;
         // Amount tokens after fees.
         uint256 tTransferAmount;
     }
@@ -71,13 +60,6 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
         validAddress(_treasuryPool, _teamPool)
          
     {
-        require(
-            // _liquidityPool != address(0) && 
-            // _rewardsPool != address(0) && 
-            _treasuryPool != address(0) && 
-            _teamPool != address(0),
-            "LIQUIDITY/REWARDS/TREASURY/TEAM POOL ADDRESS CANNOT BE ZERO"
-        );
 
         //Set Pool Addresses
         // liquidityPool = _liquidityPool;
@@ -92,8 +74,6 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
         excludeAccountFromFee(msg.sender);
         excludeAccountFromFee(address(this));
         excludeAccountFromFee(treasuryPool);
-        // excludeAccountFromFee(rewardsPool);
-        // excludeAccountFromFee(liquidityPool);
         excludeAccountFromFee(teamPool);
 
         emit Transfer(address(0), _msgSender(), _totalSupply);
@@ -104,36 +84,13 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
     //test on testnet
     receive() external payable {}
 
-    // function updateLiquidityPool(address payable pool) external onlyOwner {
-    //     liquidityPool = pool;
-    // }
-
-    // function updateRewardsPool(address payable pool) external onlyOwner {
-    //     rewardsPool = pool;
-    // }
-
     function updateTreasuryPool(address payable pool) external onlyOwner {
         treasuryPool = pool;
     }
-    // function updateteamPool(address payable pool) external onlyOwner {
-    //     teamPool = pool;
-    // }
-
-    // function updateRewardsFee(uint8 value) external onlyOwner {
-    //     rewardsFee = value;
-    // }
 
     function updateTreasuryFee(uint8 value) external onlyOwner {
         treasuryFee = value;
     }
-
-    // function updateteamFee(uint8 value) external onlyOwner {
-    //     teamFee = value;
-    // }
-
-    // function updateLiquidityFee(uint8 value) external onlyOwner {
-    //     liquidityPoolFee = value;
-    // }
 
     function blacklistMalicious(address account, bool value)
         external
@@ -146,8 +103,7 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
-
-    //TEST TRANSFER FUNCTION
+    
     function _transfer(address sender, address recipient, uint256 amount) 
     validAddress(sender,recipient) 
     internal 
@@ -168,9 +124,7 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
             amountReceived=values.tTransferAmount;
 
             super._transfer(sender, treasuryPool, values.tTreasuryFee);
-            // super._transfer(sender, rewardsPool, values.tRewardsFee);
-            // super._transfer(sender, teamPool, values.tTeamFee);
-            // super._transfer(sender, liquidityPool, values.tLiquidityFee);
+
         }
 
         super._transfer(sender, recipient, amountReceived);
@@ -225,18 +179,12 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
             values.tTransferAmount = values.amount;
         } else {
             // calculate fee
-            // values.tRewardsFee = _calculateTax(values.amount, rewardsFee, 0);
-            // values.tLiquidityFee = _calculateTax(values.amount, liquidityPoolFee, 0);
             values.tTreasuryFee = _calculateTax(values.amount, treasuryFee, 0);
-            // values.tTeamFee = _calculateTax(values.amount, teamFee, 0);
             
             // amount after fee
             values.tTransferAmount = 
             values.amount - 
-            // values.tRewardsFee - 
-            // values.tLiquidityFee - 
             values.tTreasuryFee; 
-            // values.tTeamFee;
         }
     }
 
