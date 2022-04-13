@@ -51,8 +51,6 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
     }
 
     constructor(
-        // address payable _liquidityPool,
-        // address payable _rewardsPool,
         address payable _treasuryPool,
         address payable _teamPool
     )
@@ -62,8 +60,6 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
     {
 
         //Set Pool Addresses
-        // liquidityPool = _liquidityPool;
-        // rewardsPool = _rewardsPool;
         treasuryPool = _treasuryPool;
         teamPool = _teamPool;
         
@@ -103,7 +99,7 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
-    
+
     function _transfer(address sender, address recipient, uint256 amount) 
     validAddress(sender,recipient) 
     internal 
