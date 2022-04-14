@@ -11,6 +11,7 @@ import "./interfaces/IJoeFactory.sol";
 contract PeachPool { 
     address public immutable WAVAX;
     address PEACH_TOKEN;
+    address public wavaxPeachPairAddress;
 
     address private JOE_FACTORY;
     address private JOE_ROUTER;
@@ -26,7 +27,7 @@ contract PeachPool {
 
         JOE_FACTORY = _factory;
         JOE_ROUTER = _router;
-        // joeRouter = IJoeRouter01(_router);
+        wavaxPeachPairAddress = IJoeFactory(JOE_FACTORY).createPair(PEACH_TOKEN, _WAVAX);
     }
 
     receive() external payable { }
@@ -71,6 +72,19 @@ contract PeachPool {
         emit Log("avaxAmount", avaxAmount);
     }
 
+    function addLiquidityToken(address token1Address, address token2Address, uint token1Amount, uint token2Amount) external {
+        IJoeRouter01(JOE_ROUTER).addLiquidity(
+            token1Address,
+            token2Address,
+            token1Amount,
+            token2Amount,
+            1,
+            1,
+            address(this),
+            block.timestamp
+        );
+    }
+
     // internalTokenAmount - depends on the network (avax/eth)
     function addLiquidityTest(address _tokenAddress, uint _tokenAmount, uint _internalTokenAmount) external payable { 
         IERC20(_tokenAddress).transferFrom(msg.sender, address(this), _tokenAmount);
@@ -83,5 +97,41 @@ contract PeachPool {
         emit Log("amountA", amountToken);
         emit Log("internalTokenAmount", internalTokenAmount);
         emit Log("liquidity", liquidity);
+    }
+
+    function getPair() public view returns(address) {
+        return wavaxPeachPairAddress;
+    }
+
+
+//  uint256 amountOutMin,
+//         address[] calldata path,
+//         address to,
+//         uint256 deadline
+
+    function customSwapExactAVAXForTokens(uint256 amountOutMin, address[] calldata path, address to) external payable returns(uint[] memory amount) { 
+        return IJoeRouter01(JOE_ROUTER).swapExactAVAXForTokens(
+            amountOutMin,
+            path,
+            to,
+            block.timestamp
+        );       
+    }
+
+    function customAddLiquidityAVAX(
+        address token,
+        uint256 amountTokenDesired,
+        uint256 amountTokenMin,
+        uint256 amountAVAXMin,
+        address to
+    ) external payable returns(uint256 amountToken, uint256 amountAVAX, uint256 liquidity) {
+        return IJoeRouter01(JOE_ROUTER).addLiquidityAVAX(
+        token,
+        amountTokenDesired,
+        amountTokenMin,
+        amountAVAXMin,
+        to,
+        block.timestamp
+        );
     }
 }
