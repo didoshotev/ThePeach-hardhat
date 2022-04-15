@@ -28,7 +28,7 @@ contract PeachHelper is Ownable {
 
     event Received(address, uint);
     
-    constructor(address _manager, address _PeachToken){
+    constructor(address _PeachToken){
         // manager = NodeManager(_manager);
         PeachToken = IERC20(_PeachToken);
         Peach = _PeachToken;
