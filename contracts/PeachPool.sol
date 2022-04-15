@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // import "./interfaces/IERC20.sol";
 import "./interfaces/IJoeRouter01.sol";
 import "./interfaces/IJoeFactory.sol";
+import "./interfaces/IJoePair.sol";
 
 // add/remove liquidity
 
@@ -121,10 +122,12 @@ contract PeachPool {
     function customAddLiquidityAVAX(
         address token,
         uint256 amountTokenDesired,
+        uint256 amountAvaxDesired,
         uint256 amountTokenMin,
         uint256 amountAVAXMin,
         address to
     ) external payable returns(uint256 amountToken, uint256 amountAVAX, uint256 liquidity) {
+       // pass msg.value
         return IJoeRouter01(JOE_ROUTER).addLiquidityAVAX(
         token,
         amountTokenDesired,
