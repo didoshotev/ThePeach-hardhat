@@ -13,6 +13,8 @@ const WAVAX_ADDRESS = "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7";
 const DEPOSIT_NUMBER = "5000000000000000000000"; // 5000
 const largeAmount = ethers.utils.parseEther('100');
 const amount80 = ethers.utils.parseEther('80');
+const amount20 = ethers.utils.parseEther('20');
+// const amount1 = ethers.utils.parseEther('19');
 
 
 describe("Deploy contracts", () => {
@@ -68,12 +70,12 @@ describe("Deploy contracts", () => {
         await peachToken.connect(peachOwner).approve(peachPool.address, ethers.constants.MaxUint256)
     });
 
-    it("should add liquidity", async () => {
+    it("should add liquidity and swap tokens for avax", async () => {
 
         await wavaxContract.connect(peachOwner).approve(joeRouterContract.address, largeAmount);
         await peachToken.connect(peachOwner).approve(joeRouterContract.address, largeAmount)
 
-        console.log('peach address: ', peachToken.address);
+        // console.log('peach address: ', peachToken.address);
         // const options = { value: ethers.utils.parseEther("1.0") }
         // const reciept = await contract.buyPunk(1001, options);
 
@@ -89,10 +91,10 @@ describe("Deploy contracts", () => {
         const receipt = await tx.wait();
 
         const wavaxPeachPairAddress = await peachPool.getPair();
-        console.log('wavaxPeachPairAddress: ', wavaxPeachPairAddress);
+        // console.log('wavaxPeachPairAddress: ', wavaxPeachPairAddress);
         
         const wavaxPeachPairAddress2 = await joeFactoryContract.getPair(peachToken.address, WAVAX_ADDRESS);
-        console.log('wavaxPeachPairAddress2: ', wavaxPeachPairAddress2);
+        // console.log('wavaxPeachPairAddress2: ', wavaxPeachPairAddress2);
         
         expect(wavaxPeachPairAddress).equal(wavaxPeachPairAddress2);
 
@@ -100,14 +102,39 @@ describe("Deploy contracts", () => {
         const peachFormatted = ethers.utils.formatEther(peachBalance)
         
         const wavaxBalance = await wavaxContract.balanceOf(peachOwner.address);
-        const wavaxFormatted = ethers.utils.formatEther(wavaxBalance);
+        const wavaxFormatted = ethers.utils.formatEther(wavaxBalance)
+        
+        //AVAX value of peachOwner doesnt change
+        //Works up to 15 ether
+        const swap = await joeRouterContract.connect(peachOwner).swapExactTokensForAVAX(
+            amount20,
+            0,
+            [peachToken.address,wavaxContract.address],
+            peachOwner.address,
+            ethers.BigNumber.from(minutesFromNow(30))
+        )
+        
+        const swapReceipt = await swap.wait();
+        console.log('swapReceipt: ', swapReceipt);
 
+        const newpeachBalance = await peachToken.balanceOf(peachOwner.address);
+        const newpeachFormatted = ethers.utils.formatEther(newpeachBalance)
+        
+        const newwavaxBalance = await wavaxContract.balanceOf(peachOwner.address);
+        const newwavaxFormatted = ethers.utils.formatEther(newwavaxBalance);
 
         console.log('peachFormatted: ', peachFormatted);
         console.log('wavaxFormatted: ', wavaxFormatted);
 
-        // const lpBalance = await wavaxPeachPairAddress.balanceOf(peachOwner.address);
-        // console.log('lpBalance: ', lpBalance);
+        console.log('peachFormatted: ', newpeachFormatted);
+        console.log('wavaxFormatted: ', newwavaxFormatted);
+
+
+        // const swap = await peachPool.connect(peachOwner).customSwapExactAVAXForTokens( 
+        //     big_number, 
+        //     [wavaxContract.address, peachToken.address],
+        //     peachOwner.address
+        // )
         
         // const tx2 = await peachPool.connect(peachOwner).customAddLiquidityAVAX(
         //     peachToken.address,
