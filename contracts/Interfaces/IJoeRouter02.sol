@@ -1,5 +1,6 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity >=0.6.2;
+
 interface IJoeRouter01 {
     function factory() external pure returns (address);
 
@@ -159,9 +160,6 @@ interface IJoeRouter01 {
         returns (uint256[] memory amounts);
 }
 
-// File: contracts/traderjoe/interfaces/IJoeRouter02.sol
-
-pragma solidity ^0.8.0;
 
 interface IJoeRouter02 is IJoeRouter01 {
     function removeLiquidityAVAXSupportingFeeOnTransferTokens(

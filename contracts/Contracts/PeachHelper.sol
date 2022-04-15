@@ -3,15 +3,15 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 // import "./NodeManager.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IJoeRouter02.sol";
-import "./IJoeFactory.sol";
+import "../Interfaces/IJoeRouter02.sol";
+import "../Interfaces/IJoeFactory.sol";
 
 //REMOVE IMPORT WHEN NODEMANAGER.SOL IS FINISHED!
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+//import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract PeachHelper is Ownable {
-    using SafeMath for uint;
-    using SafeMath for uint256;
+    // using SafeMath for uint;
+    // using SafeMath for uint256;
 
     // NodeManager public manager;
     IERC20 public PeachToken;
