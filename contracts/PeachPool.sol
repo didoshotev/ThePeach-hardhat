@@ -3,9 +3,7 @@ pragma solidity ^0.8.4;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-// import "./interfaces/IERC20.sol";
-import "./interfaces/IJoeRouter01.sol";
-// import "./interfaces/IJoeRouter02.sol";
+import "./interfaces/IJoeRouter02.sol";
 import "./interfaces/IJoeFactory.sol";
 import "./interfaces/IJoePair.sol";
 
@@ -19,7 +17,7 @@ contract PeachPool {
     address private JOE_FACTORY;
     address private JOE_ROUTER;
 
-    IJoeRouter01 private router;
+    IJoeRouter02 private router;
     IJoePair private pair;
 
     event Log(string message, uint val);
@@ -32,7 +30,7 @@ contract PeachPool {
         address _WAVAX,
         address[2] memory path
     ) {
-        router = IJoeRouter01(_router);
+        router = IJoeRouter02(_router);
         pair = createJoePair(path);
 
         PEACH_TOKEN = _peachToken;
@@ -46,41 +44,26 @@ contract PeachPool {
 
     receive() external payable {}
 
-    //   @params addLiquidityAVAX
-    //     address token,
-    //     uint256 amountTokenDesired,
-    //     uint256 amountTokenMin,
-    //     uint256 amountAVAXMin,
-    //     address to,
-    //     uint256 deadline
-    function addLiquidityAvax(
-        address _tokenAddress,
-        uint _tokenAmount,
-        uint _avaxAmount
-    ) external payable {
-        IERC20(_tokenAddress).approve(JOE_ROUTER, _tokenAmount);
+    function addLiquidityAvax(address _tokenAddress, uint _tokenAmount)
+        external
+        payable
+    {
         IERC20(_tokenAddress).transferFrom(
             msg.sender,
             address(this),
             _tokenAmount
         );
+        IERC20(_tokenAddress).approve(address(router), _tokenAmount);
+        // IERC20(_tokenAddress).approve(router.factory(), _tokenAmount);
 
-        (
-            uint256 amountToken,
-            uint256 amountAVAX,
-            uint256 liquidity
-        ) = IJoeRouter01(JOE_ROUTER).addLiquidityAVAX{value: _avaxAmount}(
-                _tokenAddress,
-                _tokenAmount,
-                1,
-                1,
-                address(this),
-                block.timestamp
-            );
-
-        emit Log("amountA", amountToken);
-        emit Log("amountAvax", amountAVAX);
-        emit Log("liquidity", liquidity);
+        router.addLiquidityAVAX{value: msg.value}(
+            _tokenAddress,
+            _tokenAmount,
+            1,
+            1,
+            msg.sender,
+            block.timestamp
+        );
     }
 
     function removeLiquidityAvax(address _tokenAddress) external {
@@ -106,53 +89,6 @@ contract PeachPool {
 
         emit Log("peachAmount", peachAmount);
         emit Log("avaxAmount", avaxAmount);
-    }
-
-    function addLiquidityToken(
-        address token1Address,
-        address token2Address,
-        uint token1Amount,
-        uint token2Amount
-    ) external {
-        IJoeRouter01(JOE_ROUTER).addLiquidity(
-            token1Address,
-            token2Address,
-            token1Amount,
-            token2Amount,
-            1,
-            1,
-            address(this),
-            block.timestamp
-        );
-    }
-
-    function customAddLiquidityAVAX(
-        address token,
-        uint256 amountTokenDesired,
-        uint256 amountTokenMin,
-        uint256 amountAVAXMin,
-        address to
-    )
-        external
-        payable
-        returns (
-            uint256 amountToken,
-            uint256 amountAVAX,
-            uint256 liquidity
-        )
-    {
-        console.log("MSG VALUE: ", msg.value);
-        console.log("amountTokenDesired: ", amountTokenDesired);
-        // pass msg.value
-        return
-            router.addLiquidityAVAX{value: msg.value}(
-                token,
-                amountTokenDesired,
-                amountTokenMin,
-                amountAVAXMin,
-                to,
-                block.timestamp
-            );
     }
 
     function createJoePair(address[2] memory path) private returns (IJoePair) {

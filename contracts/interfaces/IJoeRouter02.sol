@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.6.2;
 
-// import "./IJoeRouter01.sol";
+import "./IJoeRouter01.sol";
 
-interface IJoeRouter02 {
+interface IJoeRouter02 is IJoeRouter01 {
     function removeLiquidityAVAXSupportingFeeOnTransferTokens(
         address token,
         uint256 liquidity,
