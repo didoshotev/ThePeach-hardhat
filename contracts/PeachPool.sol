@@ -66,6 +66,35 @@ contract PeachPool {
         );
     }
 
+    function swapExactTokensForAVAX(address _tokenAddress, uint256 _tokenAmount, address[] calldata path, address _WAVAX, uint256 _wavaxAmount) external payable returns(uint[] memory amount) { 
+        IERC20(_tokenAddress).approve(address(JOE_ROUTER), _tokenAmount);
+        IERC20(_tokenAddress).approve(JOE_FACTORY, _tokenAmount);
+        
+        IERC20(_tokenAddress).transferFrom(
+            msg.sender,
+            address(this),
+            _tokenAmount
+        );
+
+        IERC20(_WAVAX).transferFrom(
+            msg.sender,
+            address(this),
+            _wavaxAmount
+        );
+
+
+        // IERC20(address(this)).approve(address(JOE_ROUTER), amountOutMin);
+        // IERC20(address(this)).approve(address(JOE_FACTORY), amountOutMin);
+
+        return IJoeRouter01(JOE_ROUTER).swapExactTokensForAVAX(
+            _tokenAmount,
+            1,
+            path,
+            address(this),
+            block.timestamp
+        );       
+    }
+
     function removeLiquidityAvax(address _tokenAddress) external {
         address currPair = IJoeFactory(JOE_FACTORY).getPair(
             _tokenAddress,
