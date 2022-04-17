@@ -85,8 +85,22 @@ contract PeachPool {
             msg.sender,
             block.timestamp
         );
-        console.log("amounts[1]: ", amounts[1]);
         return amounts;
+    }
+
+    function swapAVAXForExactTokens(
+        address _tokenAddress,
+        uint256 _tokenAmount,
+        address[] calldata path
+    ) external payable returns (uint[] memory amount) {
+        IERC20(_tokenAddress).approve(address(router), _tokenAmount);
+
+        return router.swapAVAXForExactTokens{value: msg.value}(
+            _tokenAmount,
+            path,
+            msg.sender,
+            block.timestamp
+        );
     }
 
     function removeLiquidityAvax(address _tokenAddress) external {
