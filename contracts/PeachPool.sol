@@ -17,7 +17,7 @@ contract PeachPool {
     address private JOE_FACTORY;
     address private JOE_ROUTER;
 
-    IJoeRouter02 private router;
+    IJoeRouter02 private router; // use this
     IJoePair private pair;
 
     event Log(string message, uint val);
@@ -38,7 +38,6 @@ contract PeachPool {
 
         JOE_FACTORY = _factory;
         JOE_ROUTER = _router;
-
         // wavaxPeachPairAddress = IJoeFactory(JOE_FACTORY).createPair(PEACH_TOKEN, _WAVAX);
     }
 
@@ -64,6 +63,30 @@ contract PeachPool {
             msg.sender,
             block.timestamp
         );
+    }
+
+    function swapExactTokensForAVAX(
+        address _tokenAddress,
+        uint256 _tokenAmount,
+        address[] calldata path
+    ) external returns (uint[] memory amount) {
+        IERC20(_tokenAddress).approve(address(router), _tokenAmount);
+
+        IERC20(_tokenAddress).transferFrom(
+            msg.sender,
+            address(this),
+            _tokenAmount
+        );
+
+        uint[] memory amounts = router.swapExactTokensForAVAX(
+            _tokenAmount,
+            0,
+            path,
+            msg.sender,
+            block.timestamp
+        );
+        console.log("amounts[1]: ", amounts[1]);
+        return amounts;
     }
 
     function removeLiquidityAvax(address _tokenAddress) external {
