@@ -2,6 +2,7 @@ const hre = require("hardhat")
 const JOE_ROUTER_ABI = require("../abi/joe_router_abi.json");
 const JOE_FACTORY_ABI = require("../abi/joe_factory_abi.json");
 const WAVAX_ABI = require("../abi/wavax_abi.json");
+
 const { expect, assert } = require("chai");
 const { ethers, waffle } = require("hardhat");
 const { BigNumber } = require("ethers");
@@ -38,7 +39,7 @@ describe("Deploy contracts", () => {
             ]
         );
 
-        [peachOwner, peachPoolOwner] = await ethers.getSigners();
+        [peachOwner, peachPoolOwner, randomUser1] = await ethers.getSigners();
 
         // define Joe Router contract
         joeRouterContract = await ethers.getContractAt(JOE_ROUTER_ABI, JOE_ROUTER_ADDRESS);
@@ -176,10 +177,57 @@ describe("Deploy contracts", () => {
 
         const peachAfterSwap = ethers.utils.formatEther(await peachToken.balanceOf(peachOwner.address))
         const peachOwnerAvaxAfterSwap = ethers.utils.formatEther(await ethers.provider.getBalance(peachOwner.address));
-        
+
         expect(+peachBeforeSwap).greaterThan(+peachAfterSwap);
         expect(+peachOwnerAvaxBeforeSwap).lessThan(+peachOwnerAvaxAfterSwap);
 
+    })
+
+    it.skip("should remove liquidity", async () => {
+        await PeachHelper.provideLiquidity(peachPool, peachOwner, peachToken.address, amount8k, amount8k);
+
+        const removeLpTx = await peachPool.connect(peachOwner).removeLiquidityAvax2(
+            peachToken.address,
+            // ethers.utils.parseEther("7000"),
+            // ethers.utils.parseEther("7000"),
+            // ethers.utils.parseEther("10000"),
+        );
+
+        const receipt = await removeLpTx.wait();
+        console.log('receipt: ', receipt);
+    })
+
+    it.only("should remove liquidity via joeRouter", async () => {
+        const amountProvided = amount8k;
+        await PeachHelper.provideLiquidity(peachPool, peachOwner, peachToken.address, amountProvided, amountProvided);
+        
+        const pairAddress = await peachPool.getPair2();
+
+        const pairContract = await ethers.getContractAt(WAVAX_ABI, pairAddress);
+        const liquidity = await pairContract.balanceOf(peachOwner.address);
+        const liquidityFormatted = ethers.utils.formatEther(liquidity);
+
+        // await wavaxContract.connect(peachOwner).approve(joeRouterContract.address, amount8k);
+        // await peachToken.connect(peachOwner).approve(joeRouterContract.address, amount8k);
+        await pairContract.connect(peachOwner).approve(joeRouterContract.address, amountProvided);
+
+        const removeLpTx = await joeRouterContract.connect(peachOwner).removeLiquidityAVAX(
+            peachToken.address,
+            liquidity,
+            ethers.utils.parseEther("6000"),
+            1,
+            randomUser1.address,
+            ethers.BigNumber.from(minutesFromNow(30)),
+        )
+        await removeLpTx.wait();
+
+        const peachBalance = ethers.utils.formatEther(await peachToken.balanceOf(randomUser1.address));
+        const avaxBalance = ethers.utils.formatEther(await ethers.provider.getBalance(randomUser1.address));
+
+        console.log('peachBalance: ', peachBalance);
+        console.log('avaxBalance: ', avaxBalance);
+
+        expect(Math.round(peachBalance)).equal(+(ethers.utils.formatEther(amountProvided)));
     })
 
     it.skip("should directly call joeRouter", async () => {

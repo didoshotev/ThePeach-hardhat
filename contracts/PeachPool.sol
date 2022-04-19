@@ -18,6 +18,7 @@ contract PeachPool {
     address private JOE_ROUTER;
 
     IJoeRouter02 private router; // use this
+    IJoeFactory private factory;
     IJoePair private pair;
 
     event Log(string message, uint val);
@@ -32,6 +33,7 @@ contract PeachPool {
     ) {
         router = IJoeRouter02(_router);
         pair = createJoePair(path);
+        factory = IJoeFactory(pair.factory());
 
         PEACH_TOKEN = _peachToken;
         WAVAX = _WAVAX;
@@ -95,37 +97,13 @@ contract PeachPool {
     ) external payable returns (uint[] memory amount) {
         IERC20(_tokenAddress).approve(address(router), _tokenAmount);
 
-        return router.swapAVAXForExactTokens{value: msg.value}(
-            _tokenAmount,
-            path,
-            msg.sender,
-            block.timestamp
-        );
-    }
-
-    function removeLiquidityAvax(address _tokenAddress) external {
-        address currPair = IJoeFactory(JOE_FACTORY).getPair(
-            _tokenAddress,
-            WAVAX
-        );
-        emit Pair("Peach/Wavax", currPair);
-
-        uint liquidity = IERC20(currPair).balanceOf(address(this));
-
-        IERC20(currPair).approve(JOE_ROUTER, liquidity);
-
-        (uint peachAmount, uint avaxAmount) = IJoeRouter01(JOE_ROUTER)
-            .removeLiquidityAVAX(
-                _tokenAddress,
-                liquidity,
-                1,
-                1,
-                address(this),
+        return
+            router.swapAVAXForExactTokens{value: msg.value}(
+                _tokenAmount,
+                path,
+                msg.sender,
                 block.timestamp
             );
-
-        emit Log("peachAmount", peachAmount);
-        emit Log("avaxAmount", avaxAmount);
     }
 
     function createJoePair(address[2] memory path) private returns (IJoePair) {
