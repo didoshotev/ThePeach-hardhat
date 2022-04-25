@@ -6,26 +6,24 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "./helpers/LimiterTaxImplementationPoint.sol";
 
-contract PeachToken is ERC20, Ownable, ReentrancyGuard {
+contract PeachToken is ERC20, Ownable, ReentrancyGuard, LimiterTaxImplementationPoint {
     using SafeMath for uint256;
-
+     mapping (address => uint256) private _balances;
     uint256 private supply = 2000000;
     uint8 private _decimals = 18;
     uint256 private _totalSupply = supply * (10 ** _decimals);
 
-    uint256 private teamSupply = 100000;
-    uint256 private vaultLock = 1000000;
+    uint256 private teamSupply = 100000 * (10 ** _decimals);
+    uint256 private vaultLock = 1000000 * (10 ** _decimals);
     bool private isTeamLocked = false;
     bool private isVaultLocked = false;
 
-    //DEAD - 0x000000000000000000000000000000000000dEaD
     address payable public treasuryPool;
     address payable public teamPool; 
     address payable public vault; 
     
-    uint8 public treasuryFee = 50;
-
     // Track Blacklisted Addresses
     mapping(address => bool) public _isBlacklisted;
 
@@ -34,15 +32,6 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
 
     event ExcludeAccountFromFee(address account);
     event IncludeAccountInFee(address account);
-
-    struct ValuesFromAmount {
-        // Amount of tokens for to transfer.
-        uint256 amount;
-        // Amount tokens charged to add to treasury.
-        uint256 tTreasuryFee;
-        // Amount tokens after fees.
-        uint256 tTransferAmount;
-    }
     
     modifier validAddress(address _one, address _two){
         require(_one != address(0));
@@ -67,11 +56,10 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
         _mint(_msgSender(), _totalSupply);
 
         // exclude owner and this contract from fees.
-        excludeAccountFromFee(msg.sender);
-        excludeAccountFromFee(address(this));
-        excludeAccountFromFee(treasuryPool);
-        excludeAccountFromFee(teamPool);
-
+        setFeeExempt(owner(), true );
+        setFeeExempt(address(this), true );
+        setFeeExempt(treasuryPool, true );
+        setFeeExempt(teamPool, true );
         emit Transfer(address(0), _msgSender(), _totalSupply);
         emit OwnershipTransferred(address(0), _msgSender());
     }
@@ -84,20 +72,11 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
         treasuryPool = pool;
     }
 
-    function updateTreasuryFee(uint8 value) external onlyOwner {
-        treasuryFee = value;
-    }
-
     function blacklistMalicious(address account, bool value)
         external
         onlyOwner
     {
         _isBlacklisted[account] = value;
-    }
-
-    function transfer(address recipient, uint256 amount) public override returns (bool) {
-        _transfer(_msgSender(), recipient, amount);
-        return true;
     }
 
     function _transfer(address sender, address recipient, uint256 amount) 
@@ -106,24 +85,26 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
     override 
     {
         require(!_isBlacklisted[sender] && !_isBlacklisted[recipient],"Blacklisted address");
+
+        uint currentFeeAmount;
+        uint256 amountReceived = shouldTakeFee(sender) ? limiterTax.takeFee(sender, recipient, amount) : amount;
+        unchecked {
+          currentFeeAmount = amount - amountReceived;  
+        } 
         
-        uint256 amountReceived = amount * (10 ** _decimals);
-        
-        bool takeFee = true;
-        ValuesFromAmount memory values = _getValues(amountReceived, _isExcludedFromFee[sender]);
-        
-        if(_isExcludedFromFee[sender] || _isExcludedFromFee[recipient]){
-            takeFee = false;
+        if (currentFeeAmount > 0){
+            unchecked {
+                _balances[sender] -= amount;
+                _balances[treasuryPool] += currentFeeAmount;
+                _balances[recipient] += amountReceived;    
+            }
         }
-
-        if (takeFee) {
-            amountReceived=values.tTransferAmount;
-
-            super._transfer(sender, treasuryPool, values.tTreasuryFee);
-
+        else {
+            unchecked {
+                _balances[sender] -= amount;
+                _balances[recipient] += amount;
+            }
         }
-
-        super._transfer(sender, recipient, amountReceived);
         emit Transfer(sender, recipient, amountReceived);
     }
 
@@ -141,50 +122,14 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard {
         isVaultLocked=true;
         transfer(vault, vaultLock);
     }
-
-    function isExcludedFromFee(address account) external view returns (bool) {
-        return _isExcludedFromFee[account];
-    }
     
-    function excludeAccountFromFee(address account) public onlyOwner {
-        require(!_isExcludedFromFee[account], "Account is already excluded.");
-
-        _isExcludedFromFee[account] = true;
-
-        emit ExcludeAccountFromFee(account);
+    function setFeeExempt(address account, bool exempt) public onlyOwner {
+        _isExcludedFromFee[account] = exempt;
     }
 
-    function includeAccountInFee(address account) public onlyOwner {
-        require(_isExcludedFromFee[account], "Account is already included.");
-
-        _isExcludedFromFee[account] = false;
-
-        emit IncludeAccountInFee(account);
+    //view funtcion
+    function shouldTakeFee(address sender) internal view returns(bool){
+        return !_isExcludedFromFee[sender];
     }
 
-    function _getValues(uint256 amount, bool deductTransferFee) private view returns (ValuesFromAmount memory) {
-        ValuesFromAmount memory values;
-        values.amount = amount;
-        _getTValues(values, deductTransferFee);
-        return values;
-    }
-
-    function _getTValues(ValuesFromAmount memory values, bool deductTransferFee) view private {
-
-        if (deductTransferFee) {
-            values.tTransferAmount = values.amount;
-        } else {
-            // calculate fee
-            values.tTreasuryFee = _calculateTax(values.amount, treasuryFee, 0);
-            
-            // amount after fee
-            values.tTransferAmount = 
-            values.amount - 
-            values.tTreasuryFee; 
-        }
-    }
-
-    function _calculateTax(uint256 amount, uint8 tax, uint8 taxDecimals_) private pure returns (uint256) {
-        return amount * tax / (10 ** taxDecimals_) / (10 ** 2);
-    }
 }
