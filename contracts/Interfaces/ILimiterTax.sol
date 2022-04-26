@@ -9,4 +9,13 @@ interface ILimiterTax{
 
     function getTransferTax() external view returns(uint256);
 
+    function isSell(address to) external view returns(bool);
+
+    function getPair() external view returns(address);
+
+    // for testing purpose only
+    function getReserve0() external view returns(uint256);
+
+    function getReserve1() external view returns(uint256);
+
 }

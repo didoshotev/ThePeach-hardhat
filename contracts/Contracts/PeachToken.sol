@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./helpers/LimiterTaxImplementationPoint.sol";
+import "hardhat/console.sol";
 
 contract PeachToken is ERC20, Ownable, ReentrancyGuard, LimiterTaxImplementationPoint {
     using SafeMath for uint256;
@@ -83,27 +84,25 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard, LimiterTaxImplementation
     validAddress(sender,recipient) 
     internal 
     override 
-    {
+    {   
         require(!_isBlacklisted[sender] && !_isBlacklisted[recipient],"Blacklisted address");
-
+        console.log("test");
         uint currentFeeAmount;
-        uint256 amountReceived = shouldTakeFee(sender) ? limiterTax.takeFee(sender, recipient, amount) : amount;
+        uint256 amountReceived = shouldTakeFee(sender) ? limiterTax.takeFee(sender, recipient, amount) : amount ;
+        console.log("Intial amount: ", amount);
+        console.log("Amount to received: ",amountReceived);
         unchecked {
           currentFeeAmount = amount - amountReceived;  
-        } 
+        }
+        console.log("fee amount: ", currentFeeAmount);
         
         if (currentFeeAmount > 0){
-            unchecked {
-                _balances[sender] -= amount;
-                _balances[treasuryPool] += currentFeeAmount;
-                _balances[recipient] += amountReceived;    
-            }
+                super._transfer(sender, recipient,amountReceived );
+                super._transfer(sender, treasuryPool,currentFeeAmount );
+                
         }
         else {
-            unchecked {
-                _balances[sender] -= amount;
-                _balances[recipient] += amount;
-            }
+                super._transfer(sender, recipient, amount );
         }
         emit Transfer(sender, recipient, amountReceived);
     }
@@ -128,8 +127,9 @@ contract PeachToken is ERC20, Ownable, ReentrancyGuard, LimiterTaxImplementation
     }
 
     //view funtcion
-    function shouldTakeFee(address sender) internal view returns(bool){
+    function shouldTakeFee(address sender) public view returns(bool){
         return !_isExcludedFromFee[sender];
     }
+    
 
 }

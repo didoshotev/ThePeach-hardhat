@@ -14,7 +14,7 @@ abstract contract LimiterTaxImplementationPoint is Ownable{
         address indexed newImplementation
     );
 
-    modifier onlyLiquidityPoolManager() {
+    modifier onlyLiquidityTaxManager() {
         require(
             address(limiterTax) != address(0),
             "Implementations: LimiterManager is not set"
@@ -27,11 +27,11 @@ abstract contract LimiterTaxImplementationPoint is Ownable{
         _;
     }
 
-    function getLiquidityPoolManager() public view returns (address) {
+    function getLiquidityTaxManager() public view returns (address) {
         return address(limiterTax);
     }
 
-    function setLiquidityPoolManager(address newImplementation) public virtual onlyOwner{
+    function setLiquidityTaxManager(address newImplementation) public virtual onlyOwner{
         address oldImplementation = address(limiterTax);
         require(Address.isContract(newImplementation) || newImplementation == address(0),
         "LimiterManager: either 0x0 or a contract address");
