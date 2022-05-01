@@ -1,2 +1,9 @@
-scripts
 node_modules
+
+artifacts
+cache
+
+.env
+
+deployments/hardhat
+deployments/localhost
