@@ -1,31 +1,34 @@
 {
-  "name": "avalanche-hardhat-fork",
+  "name": "peachnode",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "waffle",
     "test": "npx hardhat test",
-    "compile": "npx hardhat compile",
-    "build": "npm run clean && npm run compile",
-    "clean": "npx hardhat clean"
+    "deploy:rinkeby": "npx hardhat --network rinkeby deploy",
+    "deploy:localhost": "npx hardhat --network localhost deploy"
   },
-  "keywords": [],
   "author": "",
   "license": "ISC",
+  "keywords": [],
+  "description": "",
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.0",
-    "@nomiclabs/hardhat-waffle": "^2.0.0",
+    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13",
+    "@nomiclabs/hardhat-waffle": "^2.0.3",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/test-helpers": "^0.5.15",
-    "chai": "^4.2.0",
-    "ethereum-waffle": "^3.0.0",
-    "ethers": "^5.0.0",
-    "hardhat": "^2.9.3",
+    "chai": "^4.3.6",
+    "ethereum-waffle": "^3.4.4",
+    "ethers": "^5.6.4",
+    "hardhat": "^2.9.1",
+    "hardhat-gas-reporter": "^1.0.8",
     "solidity-coverage": "^0.7.20",
-    "web3": "^1.7.3"
+    "web3": "^1.7.1"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.5.0",
-    "dotenv": "^16.0.0"
+    "cli-table3": "^0.6.2",
+    "dotenv": "^16.0.0",
+    "hardhat-deploy": "^0.11.4"
   }
 }
