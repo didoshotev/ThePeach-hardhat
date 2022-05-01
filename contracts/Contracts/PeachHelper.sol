@@ -18,7 +18,7 @@ contract PeachHelper is Ownable {
     
     address public router;
     IJoeRouter02 public dexRouter;
-    address public lpPair;
+    address public peachWavaxPair;
 
     mapping (address => bool) lpPairs;
     uint256 private timeSinceLastPair = 0;
@@ -28,28 +28,18 @@ contract PeachHelper is Ownable {
 
     event Received(address, uint);
     
-    constructor(address _PeachToken){
+    constructor(address _PeachToken, address _pair, address _router){
         // manager = NodeManager(_manager);
         PeachToken = IERC20(_PeachToken);
         Peach = _PeachToken;
-
-        //Testnet Router 
-        //Mainnet Router 0x60aE616a2155Ee3d9A68541Ba4544862310933d4
-        router = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
-
-        dexRouter = IJoeRouter02(router);
+        
+        dexRouter = IJoeRouter02(_router);
         WAVAX = dexRouter.WAVAX();
-        
-        //SET LP PAIR PEACH/AVAX
-        lpPair = IJoeFactory(dexRouter.factory()).createPair(
-            _PeachToken,
-            WAVAX
-        );
 
-        lpPairs[lpPair] = true;
+        peachWavaxPair = _pair;
+        lpPairs[peachWavaxPair] = true;
 
-        PeachToken.approve(router, type(uint256).max);
-        
+        PeachToken.approve(_router, type(uint256).max);
     }
 
     receive() external payable {

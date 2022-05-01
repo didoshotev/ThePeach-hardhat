@@ -1,23 +1,21 @@
 require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-ethers");
 require('hardhat-deploy');
 require("hardhat-gas-reporter"); // ADD REPORT_GAS=true in .env to work
 require('dotenv').config();
-
-task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
-	const accounts = await hre.ethers.getSigners();
-
-	for (const account of accounts) {
-		console.log(account.address);
-	}
-});
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
 
 
+const accounts = [
+	{ privateKey: process.env.WALLET_PRIVATE_KEY, balance: "10000000000000000000000" },
+	{ privateKey: process.env.TEAM_WALLET_PRIVATE_ADDRESS, balance: "20000000000000000000000" },
+	{ privateKey: process.env.TREASURY_PRIVATE_KEY, balance: "30000000000000000000000" },
+];
+
 const INFURA_URL = `https://rinkeby.infura.io/v3/${process.env.INFURA_ID}`;
-console.log('INFURA_URL: ', INFURA_URL);
 
 module.exports = {
 	solidity: {
@@ -51,19 +49,17 @@ module.exports = {
 			},
 		],
 	},
+	defaultNetwork: "hardhat",
 	networks: {
-
 		hardhat: {
 			chainId: 43114,
 			gasPrice: 225000000000,
-			accounts: [
-				{ privateKey: process.env.WALLET_PRIVATE_KEY, balance: "10000000000000000000000"},
-				{ privateKey: process.env.TEAM_WALLET_PRIVATE_ADDRESS, balance: "10000000000000000000000"},
-				{ privateKey: process.env.TREASURY_PRIVATE_KEY, balance: "10000000000000000000000"},
-			],
+			throwOnTransactionFailures: true,
+			loggingEnabled: false,
+
 			forking: {
 				url: "https://api.avax.network/ext/bc/C/rpc",
-				enabled: false,
+				enabled: true,
 				blockNumber: 8528605
 			},
 		},
@@ -84,17 +80,20 @@ module.exports = {
 		deployer: {
 			default: process.env.WALLET_ADDRESS,
 			1: 0,
-			4: 0
+			4: 0,
+			43114: process.env.WALLET_ADDRESS
 		},
 		walletAccount: {
 			default: process.env.TEAM_WALLET_ADDRESS,
 			1: 1,
-			4: 1
+			4: 1,
+			43114: process.env.TEAM_WALLET_ADDRESS
 		},
 		treasury: {
 			default: process.env.TREASURY_ADDRESS,
 			1: 2,
-			4: 2
+			4: 2,
+			43114: process.env.TREASURY_ADDRESS
 		}
 	},
 
@@ -107,9 +106,10 @@ module.exports = {
 	mocha: {
 		timeout: "40000"
 	},
-	
+
 	gasReporter: {
 		currency: 'USD',
-		gasPrice: 21
+		gasPrice: 21,
+		enabled: (process.env.REPORT_GAS) ? true : false
 	  }
 }
